@@ -19,10 +19,11 @@ public class ClienteConectado implements Runnable{
     PrintWriter out;
     BufferedReader in;
     Thread t;
-    String apelido;
+    String name;
 
-    public ClienteConectado(Socket s) {
+    public ClienteConectado(Socket s, String name) {
         this.s = s;
+        this.name = name;
         setup();
         start();
     }
@@ -35,9 +36,10 @@ public class ClienteConectado implements Runnable{
     public String receberMensagem(){
         String msg;
         try {
-            msg = in.readLine();            
+            msg = in.readLine();
+            msg = name + ": " + msg;
             for(ClienteConectado c:Servidor.clientes){
-                c.enviarMensagem(apelido + ": " + msg);
+                c.enviarMensagem(msg);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -58,21 +60,11 @@ public class ClienteConectado implements Runnable{
         t = new Thread(this);
         t.start();
     }
-    
-    private void recebeApelido(){
-        try {
-            apelido = in.readLine();            
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
+
     @Override
     public void run() {
-        recebeApelido();
         while(true){
             receberMensagem();
         }
-    }    
+    }
 }

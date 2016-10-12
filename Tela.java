@@ -3,6 +3,8 @@
  * @author Michele
  */
 public class Tela extends javax.swing.JDialog {
+	
+	Cliente cliente;
 
     /**
      * Creates new form Tela
@@ -10,6 +12,11 @@ public class Tela extends javax.swing.JDialog {
     public Tela(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        
+        this.cliente = new Cliente(jTextArea2, jTextArea1);
+        String host = "localhost";//in.nextLine();
+        int porta = 8088;//in.nextInt();
+        cliente.conectar(host, porta);  
     }
 
     /**
@@ -91,8 +98,10 @@ public class Tela extends javax.swing.JDialog {
         pack();
     }// </editor-fold>                        
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {                                         
-        // TODO add your handling code here:
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
+    	String textToSend = jTextField1.getText();
+    	cliente.enviar(textToSend);
+    	jTextField1.setText("");
     }                                        
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {                                            
@@ -137,13 +146,9 @@ public class Tela extends javax.swing.JDialog {
                     }
                 });
                 dialog.setVisible(true);
+//                dialog.cliente.conectar("localhost", 8088);
             }
-        });
-        
-        //Cliente c = new Cliente();
-        String host = "localhost";//in.nextLine();
-        int porta = 8088;//in.nextInt();
-        //c.conectar(host, porta);    
+        });  
     }
 
     // Variables declaration - do not modify                     

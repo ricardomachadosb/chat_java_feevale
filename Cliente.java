@@ -59,7 +59,7 @@ public class Cliente implements Runnable{
     @Override
     public void run() {        
         while(true){
-            System.out.println(receber());
+        	messages.append(receber() + "\n");
         }
     }
     
