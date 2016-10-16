@@ -20,10 +20,20 @@ import java.util.Map;
  * @author gabriel
  */
 public class Servidor {
-	public static List<ClienteConectado> clientes;
     public static Map<String, ClienteConectado> clientMaps;
     private int port;
     ServerSocket ss;
+    private static String PROTOCOL_USER_PREFIX = "$:->usuario";
+    
+    public static void enviaUsuariosConectados(PrintWriter out){
+		StringBuilder builder = new StringBuilder();
+		
+		for(Map.Entry<String, ClienteConectado> entry: clientMaps.entrySet()){
+			builder.append(PROTOCOL_USER_PREFIX + " " + entry.getKey() + "\n");
+		}
+		out.println(builder.toString());
+		out.flush();
+	}
 
     /**
      * @param args the command line arguments
@@ -41,7 +51,6 @@ public class Servidor {
     private void setup() {
         try {
             ss = new ServerSocket(port);
-            clientes = new ArrayList<>();
             clientMaps = new HashMap<>();
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,7 +70,8 @@ public class Servidor {
     }
     
     private boolean isValidName(String name){
-    	return true;
+    	ClienteConectado cc = clientMaps.get(name);
+    	return cc == null;
     }
     
     private class FirstConnection implements Runnable{
@@ -70,6 +80,7 @@ public class Servidor {
     	public FirstConnection(Socket socket) {
 			this.socket = socket;
 		}
+    	
     	
 		@Override
 		public void run() {
@@ -80,17 +91,21 @@ public class Servidor {
 				String name = null;
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				
+				out.println("Digite seu nickname");
+				out.flush();
+				
 				while(!validName){
-					out.println("Informe Seu nome");
-					out.flush();
 					name = in.readLine();
 					if(isValidName(name)){
 						validName = true;
+						enviaUsuariosConectados(out);
+					}else {
+						out.println("Nickname invalido, escolha outro");
+						out.flush();
 					}
 				}
 	        	cli = new ClienteConectado(socket, name);
 				clientMaps.put(name, cli);
-	            clientes.add(cli);
 			} catch (IOException e) {
 				try {
 					socket.close();
