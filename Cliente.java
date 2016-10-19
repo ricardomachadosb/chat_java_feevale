@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -27,6 +28,11 @@ public class Cliente implements Runnable{
     private static String PROTOCOL_USER_PREFIX = "$:->usuario";
     private static String PROTOCOL_PUBLIC_MESSAGE_PREFIX = "$:->mensagem";
     private static String PROTOCOL_PRIVATE_MESSAGE_PREFIX = "$:->privado";
+    private static String PROTOCOL_LOGOUT_ACTION = "/sair";
+    private static String PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX = "$:->status";
+    private static String PROTOCOL_LOGOUT_NOTIFICATION_PREFIX = "$:->saiu";
+    
+	boolean shouldRead = true;
 
     
     private static String PROTOCOL_GET_USER_LIST = "/lista";
@@ -52,33 +58,53 @@ public class Cliente implements Runnable{
     	if(msg.equals(PROTOCOL_GET_USER_LIST)){
     		userList.setText("");
     	}
+    	
         out.println(msg);
         out.flush();
+    	
+    	if(msg.equals(PROTOCOL_LOGOUT_ACTION)){
+    		messages.append("Você foi desconectado");
+    		shouldRead = false;
+    		try {
+    			s.close();
+    		} catch (IOException e) {}
+    	}
     }
     
-    public String receber(){
-        try {
-            return in.readLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public String receber() throws IOException{
+        return in.readLine();
     }
 
     @Override
-    public void run() {        
-        while(true){
-        	String recebido = receber();
-        	//System.out.println(recebido + "foi");
-        	
-        	if(isUserInfo(recebido)){
-        		appendUser(recebido);
-        	}else if(isPublicMesage(recebido)){
-        		handleRecivedPublicMesage(recebido);
-        	}else if(isPrivateMesage(recebido)){
-        		handleRecivedPrivateMesage(recebido);
-        	}else {
-        		messages.append(recebido + "\n");
+    public void run() {
+        while(shouldRead){
+        	try {
+	        	String recebido = receber();
+	        	//System.out.println(recebido + "foi");
+	        	
+	        	if(recebido == null){
+	        		return;
+	        	}
+	        	
+	        	if(isUserInfo(recebido)){
+	        		appendUser(recebido);
+	        	}else if(isPublicMesage(recebido)){
+	        		handleRecivedPublicMesage(recebido);
+	        	}else if(isPrivateMesage(recebido)){
+	        		handleRecivedPrivateMesage(recebido);
+	        	}else if(isUserLogouNotification(recebido)){
+	        		handleLogoutNotification(recebido);
+	        	}else if(isUserNotFoundNotification(recebido)){
+	        		handleUserNotFoundNotification(recebido);
+	        	}else {
+	        		messages.append(recebido + "\n");
+	        	}
+        	}catch(Exception e){
+        		e.printStackTrace();
+        		shouldRead = false;
+        		try{
+        			s.close();
+        		}catch(Exception ee){}
         	}
         }
     }
@@ -97,6 +123,16 @@ public class Cliente implements Runnable{
     	}
     }
     
+    private void handleLogoutNotification(String message){
+    	String[] splitedMesage = message.split(" ", 2);
+    	messages.append("Usuario Desconectado: " + splitedMesage[1] + "\n");
+    }
+    
+    private void handleUserNotFoundNotification(String message){
+    	String[] splitedMesage = message.split(" ", 2);
+    	messages.append(splitedMesage[1] + "\n");
+    }
+    
     /**
      * @param message
      * @return
@@ -111,6 +147,14 @@ public class Cliente implements Runnable{
     
     private boolean isPrivateMesage(String message){
     	return message != null && message.startsWith(PROTOCOL_PRIVATE_MESSAGE_PREFIX);
+    }
+    
+    private boolean isUserLogouNotification(String message){
+    	return message != null && message.startsWith(PROTOCOL_LOGOUT_NOTIFICATION_PREFIX);
+    }
+    
+    private boolean isUserNotFoundNotification(String message){
+    	return message != null && message.startsWith(PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX);
     }
     
     /**

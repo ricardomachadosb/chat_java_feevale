@@ -98,14 +98,14 @@ public class Servidor {
 					name = in.readLine();
 					if(isValidName(name)){
 						validName = true;
+			        	cli = new ClienteConectado(socket, name);
+						clientMaps.put(name, cli);
 						enviaUsuariosConectados(out);
 					}else {
 						out.println("Nickname invalido, escolha outro");
 						out.flush();
 					}
 				}
-	        	cli = new ClienteConectado(socket, name);
-				clientMaps.put(name, cli);
 			} catch (IOException e) {
 				try {
 					socket.close();
