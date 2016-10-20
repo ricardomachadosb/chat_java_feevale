@@ -26,12 +26,18 @@ public class ClienteConectado implements Runnable{
     private static String PROTOCOL_PUBLIC_MESSAGE = "/mensagem";
     private static String PROTOCOL_PRIVATE_MESSAGE = "/privado";
     private static String PROTOCOL_LOGOUT_ACTION = "/sair";
+    private static String PROTOCOL_PING_ACTION = "/ping";
+
 
     
     private static String PROTOCOL_SEND_PUBLIC_MESSAGE_PREFIX = "$:->mensagem";
     private static String PROTOCOL_SEND_PRIVATE_MESSAGE_PREFIX = "$:->privado";
-    private static String PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX = "$:->status";
+    private static String PROTOCOL_SEND_USER_NOT_FOUND_NOTIFICATION_PREFIX = "$:->status";
     private static String PROTOCOL_SEND_LOGOUT_NOTIFICATION_PREFIX = "$:->saiu";
+    private static String PROTOCOL_SEND_PONG_PREFIX = "$:->pong";
+    private static String PROTOCOL_SEND_LOGIN_NOTIFICATION_PREFIX = "$:->entrou";
+
+
 
 
     public ClienteConectado(Socket s, String name) {
@@ -46,7 +52,7 @@ public class ClienteConectado implements Runnable{
         out.flush();
     }
     
-    public String receberMensagem() throws IOException{
+    public void receberMensagem() throws IOException{
         String msg = in.readLine();
         
         if(msg.equals(PROTOCOL_GET_USER_LIST)){
@@ -57,8 +63,9 @@ public class ClienteConectado implements Runnable{
         	sendPrivateMesage(msg);
         }else if(msg.equals(PROTOCOL_LOGOUT_ACTION)){
         	logoutUser();
+        }else if(msg.equals(PROTOCOL_PING_ACTION)){
+        	handlePingAction();
         }
-        return null;
     }
     
     private void sendPublicMessage(String msg){
@@ -75,7 +82,7 @@ public class ClienteConectado implements Runnable{
     	}else {
     		ClienteConectado destino = Servidor.clientMaps.get(splitedMessage[1]);
     		if(destino == null){
-    			enviarMensagem(PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX + " " + "Usuario Não conectado");
+    			enviarMensagem(PROTOCOL_SEND_USER_NOT_FOUND_NOTIFICATION_PREFIX + " " + "Usuario Não conectado");
     		}else {
     			destino.enviarMensagem(PROTOCOL_SEND_PRIVATE_MESSAGE_PREFIX + " " + name + " " + splitedMessage[2]);
     		}
@@ -96,6 +103,10 @@ public class ClienteConectado implements Runnable{
         }
     }
     
+    private void handlePingAction(){
+    	enviarMensagem(PROTOCOL_SEND_PONG_PREFIX);
+    }
+    
     private void setup(){
         try {
             in = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -108,6 +119,13 @@ public class ClienteConectado implements Runnable{
     private void start(){
         t = new Thread(this);
         t.start();
+    }
+    
+    public void sendLoginNotificationForAll(){
+    	String msg = PROTOCOL_SEND_LOGIN_NOTIFICATION_PREFIX + " " + name + " ";
+        for(ClienteConectado c:Servidor.clientMaps.values()){
+            c.enviarMensagem(msg);
+        }
     }
 
     @Override

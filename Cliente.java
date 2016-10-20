@@ -31,6 +31,9 @@ public class Cliente implements Runnable{
     private static String PROTOCOL_LOGOUT_ACTION = "/sair";
     private static String PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX = "$:->status";
     private static String PROTOCOL_LOGOUT_NOTIFICATION_PREFIX = "$:->saiu";
+    private static String PROTOCOL_PING_RESPONSE_PREFIX = "$:->pong";
+    private static String PROTOCOL_LOGIN_NOTIFICATION_PREFIX = "$:->entrou";
+
     
 	boolean shouldRead = true;
 
@@ -61,13 +64,13 @@ public class Cliente implements Runnable{
     	
         out.println(msg);
         out.flush();
+        
+        if(isPrivateMesage(msg)){
+        	handlePrivateMesageSend(msg);
+        }
     	
     	if(msg.equals(PROTOCOL_LOGOUT_ACTION)){
-    		messages.append("Você foi desconectado");
-    		shouldRead = false;
-    		try {
-    			s.close();
-    		} catch (IOException e) {}
+    		handleLogoutAction();
     	}
     }
     
@@ -96,6 +99,10 @@ public class Cliente implements Runnable{
 	        		handleLogoutNotification(recebido);
 	        	}else if(isUserNotFoundNotification(recebido)){
 	        		handleUserNotFoundNotification(recebido);
+	        	}else if(isPingResponse(recebido)){
+	        		handlePingResponse();
+	        	}else if(isLoginNotification(recebido)){
+	        		handleLoginNotification(recebido);
 	        	}else {
 	        		messages.append(recebido + "\n");
 	        	}
@@ -123,9 +130,33 @@ public class Cliente implements Runnable{
     	}
     }
     
+    private void handlePrivateMesageSend(String message){
+    	String[] splitedMesage = message.split(" ", 3);
+    	if(splitedMesage.length == 3){
+    		messages.append("Mensagem privada para " + splitedMesage[1] + ": " + splitedMesage[2] + "\n");
+    	}
+    }
+    
     private void handleLogoutNotification(String message){
     	String[] splitedMesage = message.split(" ", 2);
     	messages.append("Usuario Desconectado: " + splitedMesage[1] + "\n");
+    }
+    
+    private void handleLoginNotification(String message){
+    	String[] splitedMesage = message.split(" ", 2);
+    	messages.append(splitedMesage[1] + "Entrou no chat" + "\n");
+    }
+    
+    private void handleLogoutAction(){
+    	messages.append("Você foi desconectado");
+		shouldRead = false;
+		try {
+			s.close();
+		} catch (IOException e) {}
+    }
+    
+    private void handlePingResponse(){
+    	messages.append("Servidor: Pong" + "\n");
     }
     
     private void handleUserNotFoundNotification(String message){
@@ -157,20 +188,31 @@ public class Cliente implements Runnable{
     	return message != null && message.startsWith(PROTOCOL_USER_NOT_FOUND_NOTIFICATION_PREFIX);
     }
     
+    private boolean isPingResponse(String message){
+    	return message != null && message.startsWith(PROTOCOL_PING_RESPONSE_PREFIX);
+    }
+    
+    private boolean isLoginNotification(String message){
+    	return message != null && message.startsWith(PROTOCOL_LOGIN_NOTIFICATION_PREFIX);
+    }
+    
     /**
      * @param user
      */
     private void appendUser(String user){
-    	user = user.substring(user.indexOf(" ") + 1);
-    	
-    	if(user != null && !user.isEmpty()){
-        	String currentText = userList.getText();
-        	if(currentText != null && !currentText.isEmpty()){
-        		currentText += "\n" + user;
-        	}else {
-        		currentText = user;
-        	}
-    		userList.setText(currentText);
+    	if(user.contains(" ")){
+	    	user = user.substring(user.indexOf(" ") + 1);
+	    	
+	    	if(user != null && !user.isEmpty()){
+	        	String currentText = userList.getText();
+	        	if(currentText != null && !currentText.isEmpty()){
+	        		currentText += "\n" + user;
+	        	}else {
+	        		currentText = user;
+	        	}
+	    		userList.setText(currentText);
+	    	}
     	}
     }
+    
 }

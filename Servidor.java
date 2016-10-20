@@ -31,6 +31,7 @@ public class Servidor {
 		for(Map.Entry<String, ClienteConectado> entry: clientMaps.entrySet()){
 			builder.append(PROTOCOL_USER_PREFIX + " " + entry.getKey() + "\n");
 		}
+		builder.append(PROTOCOL_USER_PREFIX + "\n"); 
 		out.println(builder.toString());
 		out.flush();
 	}
@@ -101,6 +102,7 @@ public class Servidor {
 			        	cli = new ClienteConectado(socket, name);
 						clientMaps.put(name, cli);
 						enviaUsuariosConectados(out);
+						cli.sendLoginNotificationForAll();
 					}else {
 						out.println("Nickname invalido, escolha outro");
 						out.flush();
